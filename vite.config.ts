@@ -29,11 +29,11 @@ export default defineConfig(({ mode }) => ({
           // Heavy UI libs
           "vendor-ui": ["@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu", "@radix-ui/react-tooltip", "@radix-ui/react-popover", "@radix-ui/react-select", "lucide-react"],
           // Data / state
-          "vendor-data": ["@tanstack/react-query", "zustand", "immer"],
+          "vendor-data": ["@tanstack/react-query", "zustand"],
           // Supabase
           "vendor-supabase": ["@supabase/supabase-js"],
-          // Firebase auth
-          "vendor-firebase": ["firebase"],
+          // Firebase auth sub-packages
+          "vendor-firebase": ["firebase/app", "firebase/auth"],
         },
       },
     },
