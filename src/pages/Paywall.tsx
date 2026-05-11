@@ -345,7 +345,6 @@ export default function Paywall() {
   return (
     <div
       className="min-h-screen bg-ink text-white relative overflow-hidden"
-      style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}
       style={{ fontFamily: "Montserrat, system-ui, -apple-system, sans-serif" }}
     >
       {/* Ambient purple gradient orbs — mirrors LP dark section */}
