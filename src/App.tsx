@@ -6,19 +6,21 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { GlobalHeader } from "@/components/GlobalHeader";
 import { SmoothScroll } from "@/components/SmoothScroll";
-import Index from "./pages/Index.tsx";
-import Generator from "./pages/Generator.tsx";
-import Video from "./pages/Video.tsx";
-import SpacesProjects from "./pages/SpacesProjects.tsx";
-import MarketingStudio from "./pages/MarketingStudio.tsx";
-import MarketingStudioProject from "./pages/MarketingStudioProject.tsx";
-import NotFound from "./pages/NotFound.tsx";
-import Auth from "./pages/Auth.tsx";
-import Landingpage from "./pages/Landingpage.tsx";
-import Paywall from "./pages/Paywall.tsx";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
+
+// Lazy-load every page — only downloaded when the user actually navigates there
+const Index               = lazy(() => import("./pages/Index.tsx"));
+const Generator           = lazy(() => import("./pages/Generator.tsx"));
+const Video               = lazy(() => import("./pages/Video.tsx"));
+const SpacesProjects      = lazy(() => import("./pages/SpacesProjects.tsx"));
+const MarketingStudio     = lazy(() => import("./pages/MarketingStudio.tsx"));
+const MarketingStudioProject = lazy(() => import("./pages/MarketingStudioProject.tsx"));
+const NotFound            = lazy(() => import("./pages/NotFound.tsx"));
+const Auth                = lazy(() => import("./pages/Auth.tsx"));
+const Landingpage         = lazy(() => import("./pages/Landingpage.tsx"));
+const Paywall             = lazy(() => import("./pages/Paywall.tsx"));
 
 const queryClient = new QueryClient();
 
@@ -68,27 +70,29 @@ function AppInner() {
     <>
       <SmoothScroll />
       {showHeader && <GlobalHeader />}
-      <Routes>
-        {/* Public routes */}
-        <Route path="/" element={<Navigate to="/home" replace />} />
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/home" element={<Landingpage />} />
-        <Route path="/onboarding/paywall" element={<Paywall />} />
+      <Suspense fallback={null}>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/" element={<Navigate to="/home" replace />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/home" element={<Landingpage />} />
+          <Route path="/onboarding/paywall" element={<Paywall />} />
 
-        {/* Protected routes — require active subscription */}
-        <Route path="/create" element={<RequireSubscription><Generator /></RequireSubscription>} />
-        <Route path="/create/:slug" element={<RequireSubscription><Generator /></RequireSubscription>} />
-        <Route path="/image" element={<Navigate to="/create" replace />} />
-        <Route path="/generator" element={<Navigate to="/create" replace />} />
-        <Route path="/video" element={<RequireSubscription><Video /></RequireSubscription>} />
-        <Route path="/spaces-projects" element={<RequireSubscription><SpacesProjects /></RequireSubscription>} />
-        <Route path="/spaces" element={<RequireSubscription><Index /></RequireSubscription>} />
-        <Route path="/marketingstudio" element={<RequireSubscription><MarketingStudio /></RequireSubscription>} />
-        <Route path="/marketingstudio/:slug" element={<RequireSubscription><MarketingStudioProject /></RequireSubscription>} />
+          {/* Protected routes — require active subscription */}
+          <Route path="/create" element={<RequireSubscription><Generator /></RequireSubscription>} />
+          <Route path="/create/:slug" element={<RequireSubscription><Generator /></RequireSubscription>} />
+          <Route path="/image" element={<Navigate to="/create" replace />} />
+          <Route path="/generator" element={<Navigate to="/create" replace />} />
+          <Route path="/video" element={<RequireSubscription><Video /></RequireSubscription>} />
+          <Route path="/spaces-projects" element={<RequireSubscription><SpacesProjects /></RequireSubscription>} />
+          <Route path="/spaces" element={<RequireSubscription><Index /></RequireSubscription>} />
+          <Route path="/marketingstudio" element={<RequireSubscription><MarketingStudio /></RequireSubscription>} />
+          <Route path="/marketingstudio/:slug" element={<RequireSubscription><MarketingStudioProject /></RequireSubscription>} />
 
-        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
     </>
   );
 }
