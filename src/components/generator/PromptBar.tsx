@@ -1,0 +1,600 @@
+import { useGeneratorStore, MODELS, QUALITIES, ASPECT_RATIOS, getModelMaxRefs } from '@/store/generatorStore';
+import { ImagePlus, Minus, Plus, Check, Search, Sparkles, X } from 'lucide-react';
+
+function QualityGemIcon({ className = '' }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+    >
+      <path
+        d="M8.5 7.75L6.25 10L8.5 12.25M12.7071 20.0429L22.049 10.701C22.4371 10.3129 22.4398 9.68443 22.0551 9.29295L16.901 4.04903C16.713 3.85774 16.4561 3.75 16.1879 3.75H7.81214C7.54393 3.75 7.28696 3.85774 7.09895 4.04903L1.94493 9.29295C1.56016 9.68443 1.56288 10.3129 1.95102 10.701L11.2929 20.0429C11.6834 20.4334 12.3166 20.4334 12.7071 20.0429Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+import { useRef, useState, useEffect, useCallback } from 'react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { ReferenceImageStrip } from '@/components/generator/ReferenceImageStrip';
+import { ChevronDownIcon } from '@/components/marketingstudio/FormatIcons';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ModelIcon } from '@/components/generator/ModelIcons';
+import { GenerateButton } from '@/components/generator/GenerateButton';
+
+function buildChip(idx: number, imgUrl?: string): HTMLElement {
+  const chip = document.createElement('span');
+  chip.contentEditable = 'false';
+  chip.setAttribute('data-mention', String(idx));
+  chip.className = 'inline-flex items-center gap-1.5 pl-1 pr-2 py-0.5 mx-0.5 rounded-full bg-white/[0.08] border border-white/10 text-[12px] font-medium text-foreground/90 align-middle select-none';
+  if (imgUrl) {
+    const img = document.createElement('img');
+    img.src = imgUrl;
+    img.className = 'w-4 h-4 rounded-full object-cover';
+    chip.appendChild(img);
+  }
+  const label = document.createTextNode(`@Image ${idx + 1}`);
+  chip.appendChild(label);
+  return chip;
+}
+
+export function PromptBar() {
+  const {
+    prompt, setPrompt, referenceImages, addReferenceImage, removeReferenceImage, reorderReferenceImages,
+    model, setModel, quality, setQuality, aspectRatio, setAspectRatio,
+    quantity, setQuantity, generate,
+  } = useGeneratorStore();
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [modelOpen, setModelOpen] = useState(false);
+  const [aspectOpen, setAspectOpen] = useState(false);
+  const [qualityOpen, setQualityOpen] = useState(false);
+  const [modelSearch, setModelSearch] = useState('');
+  const [dragging, setDragging] = useState(false);
+
+  const [previewImg, setPreviewImg] = useState<string | null>(null);
+
+  // @-mention autocomplete
+  const [mentionOpen, setMentionOpen] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState('');
+  const mentionRangeRef = useRef<Range | null>(null);
+
+  const selectedModel = MODELS.find((m) => m.id === model);
+  const maxRefs = getModelMaxRefs(model);
+  const hasPromptContent = prompt.replace(/\u00A0/g, ' ').trim().length > 0;
+
+  // Render the prompt string into the contentEditable, parsing "@Image N" into chips.
+  const renderToEditor = useCallback((text: string) => {
+    const el = editorRef.current;
+    if (!el) return;
+    el.innerHTML = '';
+    const regex = /@Image (\d+)/g;
+    let last = 0;
+    let m: RegExpExecArray | null;
+    while ((m = regex.exec(text))) {
+      if (m.index > last) el.appendChild(document.createTextNode(text.slice(last, m.index)));
+      const idx = parseInt(m[1], 10) - 1;
+      const chip = buildChip(idx, referenceImages[idx]);
+      el.appendChild(chip);
+      last = m.index + m[0].length;
+    }
+    if (last < text.length) el.appendChild(document.createTextNode(text.slice(last)));
+  }, [referenceImages]);
+
+  // Initial mount + when references change (so chip thumbnails update)
+  useEffect(() => {
+    renderToEditor(prompt);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [referenceImages.length]);
+
+  useEffect(() => {
+    // First mount only
+    renderToEditor(prompt);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const placeCaretAtEnd = () => {
+    const el = editorRef.current;
+    if (!el) return;
+    el.focus();
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    range.collapse(false);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+  };
+
+  const insertMention = (idx: number) => {
+    const el = editorRef.current;
+    if (!el) return;
+    el.focus();
+    const sel = window.getSelection();
+    let range = mentionRangeRef.current;
+    // If we have a stored range covering the "@query", delete it
+    if (range) {
+      range.deleteContents();
+    } else if (sel && sel.rangeCount > 0) {
+      range = sel.getRangeAt(0);
+    } else {
+      placeCaretAtEnd();
+      range = window.getSelection()?.getRangeAt(0) ?? null;
+    }
+    if (!range) return;
+    const chip = buildChip(idx, referenceImages[idx]);
+    const trailing = document.createTextNode('\u00A0');
+    // Ensure there's a text node BEFORE the chip so users can type to its left
+    const prev = range.startContainer.nodeType === Node.TEXT_NODE
+      ? range.startContainer
+      : (range.startContainer.childNodes[range.startOffset - 1] as Node | undefined);
+    const needsLeading = !prev || prev.nodeType !== Node.TEXT_NODE || (prev.textContent || '').length === 0;
+    range.insertNode(trailing);
+    range.insertNode(chip);
+    if (needsLeading) {
+      const leading = document.createTextNode('\u00A0');
+      chip.parentNode?.insertBefore(leading, chip);
+    }
+    // Move caret after the inserted trailing space
+    const newRange = document.createRange();
+    newRange.setStartAfter(trailing);
+    newRange.collapse(true);
+    sel?.removeAllRanges();
+    sel?.addRange(newRange);
+    mentionRangeRef.current = null;
+    setMentionOpen(false);
+    syncPromptFromEditor();
+  };
+
+  const syncPromptFromEditor = () => {
+    const el = editorRef.current;
+    if (!el) return;
+    // Convert DOM to plain text — chips already contain "@Image N" as textContent
+    const text = (el.innerText || '').replace(/\u00A0/g, ' ');
+    setPrompt(text.trim().length === 0 ? '' : text);
+  };
+
+  const handleFiles = useCallback((files: FileList | File[]) => {
+    if (maxRefs === 0) return;
+    const arr = Array.from(files).filter(f => f.type.startsWith('image/'));
+    arr.slice(0, maxRefs - referenceImages.length).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => addReferenceImage(reader.result as string);
+      reader.readAsDataURL(file);
+    });
+  }, [referenceImages.length, addReferenceImage, maxRefs]);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) handleFiles(e.target.files);
+    e.target.value = '';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setDragging(true); };
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (containerRef.current && !containerRef.current.contains(e.relatedTarget as Node)) setDragging(false);
+  };
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+  };
+
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    const imageFiles: File[] = [];
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        const file = items[i].getAsFile();
+        if (file) imageFiles.push(file);
+      }
+    }
+    if (imageFiles.length > 0) {
+      e.preventDefault();
+      handleFiles(imageFiles);
+    }
+  }, [handleFiles]);
+
+  const handleSubmit = () => {
+    if (hasPromptContent) generate();
+  };
+
+  return (
+    <div className="relative w-full max-w-[1100px] mx-auto">
+      <div
+        ref={containerRef}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={`relative rounded-[22px] ms-glass p-2.5 flex flex-col gap-2 transition-all ${
+          dragging ? 'ring-2 ring-[#9C3FED]' : ''
+        }`}
+      >
+        {dragging && (
+          <div className="absolute inset-0 rounded-[22px] bg-[#9C3FED]/10 flex items-center justify-center z-10 pointer-events-none">
+            <span className="text-sm font-semibold text-[#9C3FED]">Drop images here</span>
+          </div>
+        )}
+
+        {referenceImages.length > 0 && (
+          <ReferenceImageStrip
+            images={referenceImages}
+            maxImages={maxRefs}
+            onAdd={() => fileInputRef.current?.click()}
+            onPreview={setPreviewImg}
+            onRemove={(idx) => {
+              const removedName = `Image ${idx + 1}`;
+              removeReferenceImage(idx);
+              setPrompt(prompt.replace(new RegExp(`@${removedName}\\b`, 'g'), '').replace(/\s{2,}/g, ' ').trim());
+            }}
+            onReorder={reorderReferenceImages}
+            onChipClick={(idx) => insertMention(idx)}
+          />
+        )}
+
+        <div className="flex items-center gap-2">
+          {/* Left + button (upload reference) — only when no refs yet and model supports refs */}
+          {referenceImages.length === 0 && maxRefs > 0 && (
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="grid place-items-center w-9 h-9 self-start mt-1 rounded-lg ms-chip-glass text-foreground shrink-0"
+              aria-label="Add reference"
+              title={`Up to ${maxRefs} reference image${maxRefs === 1 ? '' : 's'}`}
+            >
+              <Plus className="w-4 h-4" strokeWidth={1.5} />
+            </button>
+          )}
+
+          <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileUpload} />
+
+          {/* Prompt area */}
+          <div className="flex-1 min-w-0 flex flex-col gap-1.5 py-1 pr-1">
+            <div className="relative">
+              {!hasPromptContent && (
+                <div className="pointer-events-none absolute left-0 top-0 text-sm leading-[1.6] text-muted-foreground/60 select-none px-0">
+                  {referenceImages.length > 0 ? 'Describe the scene… type @ to reference an image' : 'Describe the scene you imagine'}
+                </div>
+              )}
+              <div
+                ref={editorRef}
+                contentEditable
+                suppressContentEditableWarning
+                role="textbox"
+                aria-multiline="true"
+                onInput={(e) => {
+                  syncPromptFromEditor();
+                  // detect "@query" before caret
+                  const sel = window.getSelection();
+                  if (!sel || sel.rangeCount === 0 || referenceImages.length === 0) {
+                    setMentionOpen(false);
+                    return;
+                  }
+                  const r = sel.getRangeAt(0).cloneRange();
+                  // walk back from caret to find '@' on the same text node
+                  const node = r.startContainer;
+                  if (node.nodeType !== Node.TEXT_NODE) {
+                    setMentionOpen(false);
+                    return;
+                  }
+                  const text = (node.textContent || '').slice(0, r.startOffset);
+                  const m = text.match(/(?:^|\s)@([A-Za-z0-9 ]{0,20})$/);
+                  if (m) {
+                    const atIndex = r.startOffset - (m[1]?.length ?? 0) - 1;
+                    const range = document.createRange();
+                    range.setStart(node, atIndex);
+                    range.setEnd(node, r.startOffset);
+                    mentionRangeRef.current = range;
+                    setMentionQuery(m[1] || '');
+                    setMentionOpen(true);
+                  } else {
+                    setMentionOpen(false);
+                  }
+                }}
+                onPaste={(e) => {
+                  // Try image paste first
+                  const items = e.clipboardData?.items;
+                  if (items) {
+                    const imgs: File[] = [];
+                    for (let i = 0; i < items.length; i++) {
+                      if (items[i].type.startsWith('image/')) {
+                        const f = items[i].getAsFile();
+                        if (f) imgs.push(f);
+                      }
+                    }
+                    if (imgs.length > 0) {
+                      e.preventDefault();
+                      handleFiles(imgs);
+                      return;
+                    }
+                  }
+                  // Plain text paste (avoid HTML pollution)
+                  e.preventDefault();
+                  const text = e.clipboardData.getData('text/plain');
+                  document.execCommand('insertText', false, text);
+                  syncPromptFromEditor();
+                }}
+                onKeyDown={(e) => {
+                  if (mentionOpen && e.key === 'Escape') {
+                    setMentionOpen(false);
+                    return;
+                  }
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit();
+                  }
+                }}
+                className="ms-prompt-editor w-full bg-transparent border-0 text-sm leading-[1.6] text-foreground focus:outline-none ms-prompt-scroll min-h-[44px] max-h-[220px] overflow-y-auto whitespace-pre-wrap break-words"
+              />
+
+            {mentionOpen && (
+              <div className="absolute left-0 bottom-full mb-2 z-30 w-56 rounded-xl ms-glass shadow-2xl overflow-hidden">
+                <div className="px-3 py-2 text-[10px] uppercase tracking-wider text-muted-foreground border-b border-white/5">
+                  Reference an image
+                </div>
+                <div className="max-h-56 overflow-y-auto">
+                  {referenceImages
+                    .map((url, idx) => ({ url, idx, name: `Image ${idx + 1}` }))
+                    .filter((r) => r.name.toLowerCase().includes(mentionQuery.toLowerCase()))
+                    .map((r) => (
+                      <button
+                        key={r.idx}
+                        type="button"
+                        onMouseDown={(e) => { e.preventDefault(); insertMention(r.idx); }}
+                        className="w-full flex items-center gap-2 px-2.5 py-2 hover:bg-white/5 text-left"
+                      >
+                        <img src={r.url} alt="" className="w-7 h-7 rounded-md object-cover" />
+                        <span className="text-sm text-foreground">@{r.name}</span>
+                      </button>
+                    ))}
+                  {referenceImages
+                    .map((_, idx) => `Image ${idx + 1}`)
+                    .filter((n) => n.toLowerCase().includes(mentionQuery.toLowerCase()))
+                    .length === 0 && (
+                    <div className="px-3 py-2 text-xs text-muted-foreground">No matches</div>
+                  )}
+                </div>
+              </div>
+            )}
+            </div>
+          </div>
+
+          {/* Generate CTA */}
+          <GenerateButton
+            onClick={handleSubmit}
+            disabled={!hasPromptContent}
+            className="self-center h-[72px] px-7 text-[15px]"
+            trailing={<span className="text-[15px] font-bold opacity-95">{quantity}</span>}
+          />
+        </div>
+
+        {/* Bottom chips row */}
+        <div className="flex items-center gap-2 flex-wrap pl-1">
+          {/* Model */}
+          <Popover open={modelOpen} onOpenChange={setModelOpen}>
+            <PopoverTrigger asChild>
+              <button className="ms-chip-glass flex items-center gap-1.5 px-3.5 h-9 rounded-full text-xs text-foreground transition-all">
+                <span className="grid place-items-center w-4 h-4 text-foreground/90">
+                  <ModelIcon id={model} className="size-3.5" />
+                </span>
+                {selectedModel?.name || model}
+                <ChevronDownIcon className="size-3.5 text-muted-foreground/70" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              align="start"
+              sideOffset={10}
+              className="w-72 p-0 rounded-2xl ms-glass shadow-[0_24px_60px_-20px_rgba(0,0,0,0.85)] overflow-hidden"
+            >
+              <ModelDropdownContent
+                model={model}
+                setModel={(m) => { setModel(m); setModelOpen(false); }}
+                search={modelSearch}
+                setSearch={setModelSearch}
+              />
+            </PopoverContent>
+          </Popover>
+
+          {/* Aspect ratio */}
+          <Popover open={aspectOpen} onOpenChange={setAspectOpen}>
+            <PopoverTrigger asChild>
+              <button className="ms-chip-glass flex items-center gap-1.5 px-3.5 h-9 rounded-full text-xs text-foreground transition-all">
+                <AspectIcon ratio={aspectRatio} className="text-white" />
+                {aspectRatio}
+                <ChevronDownIcon className="size-3.5 text-muted-foreground/70" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              align="start"
+              sideOffset={10}
+              className="w-[280px] p-3 rounded-2xl ms-glass shadow-[0_24px_60px_-20px_rgba(0,0,0,0.7)]"
+            >
+              <div className="text-[11px] font-semibold tracking-[0.18em] text-white/50 uppercase px-2 pt-1 pb-2">
+                Aspect Ratio
+              </div>
+              <div className="grid grid-cols-2 gap-1">
+                {ASPECT_RATIOS.map((ar) => {
+                  const active = aspectRatio === ar;
+                  return (
+                    <button
+                      key={ar}
+                      onClick={() => { setAspectRatio(ar); setAspectOpen(false); }}
+                      className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                        active ? 'bg-white/10 text-white' : 'text-white/85 hover:bg-white/5'
+                      }`}
+                    >
+                      <AspectIcon ratio={ar} />
+                      <span className="font-medium">{ar}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Quality */}
+          <Popover open={qualityOpen} onOpenChange={setQualityOpen}>
+            <PopoverTrigger asChild>
+              <button className="ms-chip-glass flex items-center gap-1.5 px-3.5 h-9 rounded-full text-xs text-foreground transition-all">
+                <QualityGemIcon className="text-white" />
+                {quality}
+                <ChevronDownIcon className="size-3.5 text-muted-foreground/70" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              align="start"
+              sideOffset={10}
+              className="w-44 p-1.5 rounded-2xl ms-glass shadow-[0_24px_60px_-20px_rgba(0,0,0,0.7)]"
+            >
+              <div className="px-2.5 py-1.5 text-[11px] font-semibold tracking-[0.18em] text-white/50 uppercase">Quality</div>
+              {QUALITIES.map((q) => (
+                <button
+                  key={q}
+                  onClick={() => { setQuality(q); setQualityOpen(false); }}
+                  className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-sm transition-colors ${
+                    quality === q ? 'bg-white/10 text-white' : 'text-white/85 hover:bg-white/5'
+                  }`}
+                >
+                  {q}
+                  {quality === q && <Check className="w-4 h-4 text-[#9C3FED]" />}
+                </button>
+              ))}
+            </PopoverContent>
+          </Popover>
+
+          {/* Quantity */}
+          <div className="ms-chip-glass flex items-center gap-0.5 px-2 h-9 rounded-full text-xs text-foreground">
+            <button
+              onClick={() => setQuantity(quantity - 1)}
+              className="w-6 h-6 grid place-items-center rounded-full hover:bg-white/10 transition-colors"
+            >
+              <Minus className="w-3 h-3" />
+            </button>
+            <span className="w-8 text-center tabular-nums">{quantity}/4</span>
+            <button
+              onClick={() => setQuantity(quantity + 1)}
+              className="w-6 h-6 grid place-items-center rounded-full hover:bg-white/10 transition-colors"
+            >
+              <Plus className="w-3 h-3" />
+            </button>
+          </div>
+
+          <div className="flex-1" />
+        </div>
+      </div>
+
+      {/* Image preview overlay */}
+      {previewImg && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-in fade-in"
+          onClick={() => setPreviewImg(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <img
+            src={previewImg}
+            alt="Preview"
+            className="max-h-[88vh] max-w-[96vw] sm:max-h-[92vh] sm:max-w-[92vw] object-contain rounded-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            onClick={() => setPreviewImg(null)}
+            aria-label="Close preview"
+            className="absolute top-3 right-3 sm:top-5 sm:right-5 grid place-items-center w-11 h-11 sm:w-10 sm:h-10 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/25 text-white transition-colors backdrop-blur-md ring-1 ring-white/20"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ModelDropdownContent({
+  model, setModel, search, setSearch,
+}: { model: string; setModel: (m: string) => void; search: string; setSearch: (s: string) => void }) {
+  const filtered = MODELS.filter((m) => m.name.toLowerCase().includes(search.toLowerCase()));
+  const featured = filtered.filter((m) => m.featured);
+  const all = filtered.filter((m) => !m.featured);
+
+  return (
+    <>
+      <div className="p-2 border-b border-white/5">
+        <div className="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-2">
+          <Search className="w-3.5 h-3.5 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search models…"
+            className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 border-0 focus:outline-none flex-1"
+          />
+        </div>
+      </div>
+      <div className="max-h-80 overflow-y-auto px-1 pb-1 ms-prompt-scroll">
+        {featured.length > 0 && (
+          <>
+            <div className="px-3 pt-2 pb-1 text-[10px] uppercase tracking-wider text-muted-foreground">Featured</div>
+            {featured.map((m) => (
+              <ModelRow key={m.id} m={m} selected={model === m.id} onClick={() => setModel(m.id)} />
+            ))}
+          </>
+        )}
+        {all.length > 0 && (
+          <>
+            <div className="px-3 pt-3 pb-1 text-[10px] uppercase tracking-wider text-muted-foreground">All models</div>
+            {all.map((m) => (
+              <ModelRow key={m.id} m={m} selected={model === m.id} onClick={() => setModel(m.id)} />
+            ))}
+          </>
+        )}
+      </div>
+    </>
+  );
+}
+
+function ModelRow({
+  m, selected, onClick,
+}: { m: { id: string; name: string; desc: string; featured: boolean; badge?: string }; selected: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-white/5 transition-colors ${selected ? 'bg-white/10' : ''}`}
+    >
+      <span className={`w-8 h-8 rounded-lg grid place-items-center shrink-0 ${selected ? 'bg-[#9C3FED]/15 text-[#9C3FED]' : 'bg-white/5 text-foreground/90'}`}>
+        <ModelIcon id={m.id} className="size-4" />
+      </span>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm text-foreground">{m.name}</span>
+          {m.badge && (
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#9C3FED]/20 text-[#9C3FED]">
+              {m.badge}
+            </span>
+          )}
+        </div>
+        <span className="text-xs text-muted-foreground truncate block">{m.desc}</span>
+      </div>
+      {selected && <Check className="w-4 h-4 text-[#9C3FED] shrink-0" />}
+    </button>
+  );
+}
+
+function AspectIcon({ ratio, className = '' }: { ratio: string; className?: string }) {
+  if (ratio === 'Auto') return <span className={`w-4 h-4 border border-current rounded-sm opacity-70 ${className}`} />;
+  const [w, h] = ratio.split(':').map(Number);
+  const maxSize = 14;
+  const scale = maxSize / Math.max(w, h);
+  return (
+    <span className={`w-4 h-4 flex items-center justify-center ${className}`}>
+      <span className="border border-current rounded-sm opacity-90" style={{ width: w * scale, height: h * scale }} />
+    </span>
+  );
+}

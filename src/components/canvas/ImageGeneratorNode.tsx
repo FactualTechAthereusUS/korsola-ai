@@ -1,0 +1,272 @@
+import { Handle, Position } from '@xyflow/react';
+import type { SpaceNodeData } from '@/store/canvasStore';
+import { useCanvasStore } from '@/store/canvasStore';
+import { MODELS, ASPECT_RATIOS } from '@/store/generatorStore';
+import { Image, Play, Minus, Plus, Settings, ChevronDown, Search } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { NodeToolbar } from './NodeToolbar';
+import { logSpacesEvent } from '@/lib/spacesHistory';
+import { NodeConnectors } from './NodeConnectors';
+import { NODE_INPUTS, NODE_OUTPUTS } from '@/lib/connectionRules';
+
+const NODE_MODELS = MODELS.map(m => ({ id: m.id, name: m.name }));
+
+export function ImageGeneratorNode({ id, data, selected }: { id: string; data: SpaceNodeData; selected?: boolean }) {
+  const { updateNodeData, getConnectedInputs } = useCanvasStore();
+  const [prompt, setPrompt] = useState(data.prompt || '');
+  const [quantity, setQuantity] = useState(1);
+  const [modelOpen, setModelOpen] = useState(false);
+  const [arOpen, setArOpen] = useState(false);
+  const [modelSearch, setModelSearch] = useState('');
+  const [generating, setGenerating] = useState(false);
+  const modelRef = useRef<HTMLDivElement>(null);
+  const arRef = useRef<HTMLDivElement>(null);
+
+  const selectedModel = data.model || 'gemini-3.1-flash-image';
+  const selectedAR = data.aspectRatio || '1:1';
+  const modelName = NODE_MODELS.find(m => m.id === selectedModel)?.name || 'Auto';
+
+  const filteredModels = NODE_MODELS.filter(m =>
+    m.name.toLowerCase().includes(modelSearch.toLowerCase())
+  );
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (modelRef.current && !modelRef.current.contains(e.target as Node)) setModelOpen(false);
+      if (arRef.current && !arRef.current.contains(e.target as Node)) setArOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const generateSingle = useCallback(async (nodeId: string) => {
+    const inputs = getConnectedInputs(id);
+    const finalPrompt = [...inputs.texts, prompt].filter(Boolean).join('\n');
+    const refImages = inputs.images;
+
+    if (!finalPrompt.trim() && refImages.length === 0) {
+      updateNodeData(nodeId, { status: 'error' });
+      return;
+    }
+
+    updateNodeData(nodeId, { status: 'running' });
+
+    try {
+      const { data: result, error } = await supabase.functions.invoke('generate-image', {
+        body: {
+          prompt: finalPrompt || 'generate an image',
+          referenceImages: refImages,
+          model: selectedModel,
+          quality: '2K',
+          aspectRatio: selectedAR,
+        },
+      });
+
+      if (error || result?.error) {
+        updateNodeData(nodeId, { status: 'error' });
+      } else {
+        const imageUrl = result?.imageBase64 || result?.imageUrl;
+        updateNodeData(nodeId, { status: 'complete', imageUrl });
+        const projectId = useCanvasStore.getState().projectId;
+        if (projectId) logSpacesEvent({ projectId, nodeId, eventType: 'image_generated', contentUrl: imageUrl, prompt: finalPrompt, model: selectedModel, metadata: { aspectRatio: selectedAR } });
+      }
+    } catch {
+      updateNodeData(nodeId, { status: 'error' });
+    }
+  }, [prompt, selectedModel, selectedAR, id, updateNodeData, getConnectedInputs]);
+
+  const handleGenerate = useCallback(async () => {
+    if (generating) return;
+    setGenerating(true);
+
+    const { addNode, nodes, edges } = useCanvasStore.getState();
+    const currentNode = nodes.find(n => n.id === id);
+    const basePos = currentNode?.position || { x: 300, y: 200 };
+
+    // Spawn extra generator nodes for quantity > 1
+    const nodeIds = [id];
+    for (let i = 1; i < quantity; i++) {
+      const store = useCanvasStore.getState();
+      const counter = store.nodeCounter;
+      const newCount = (counter['image-generator'] || 0) + 1;
+      const newId = `image-generator-${newCount}`;
+      const pos = { x: basePos.x + i * 360, y: basePos.y };
+
+      const newNode = {
+        id: newId,
+        type: 'image-generator' as const,
+        position: pos,
+        data: {
+          label: `Image Generator #${newCount}`,
+          type: 'image-generator' as const,
+          status: 'idle' as const,
+          model: selectedModel,
+          aspectRatio: selectedAR,
+          prompt,
+        },
+      };
+
+      useCanvasStore.setState({
+        nodes: [...useCanvasStore.getState().nodes, newNode],
+        nodeCounter: { ...useCanvasStore.getState().nodeCounter, 'image-generator': newCount },
+      });
+
+      // Copy edges from original node to new node
+      const incomingEdges = edges.filter(e => e.target === id);
+      if (incomingEdges.length > 0) {
+        const newEdges = incomingEdges.map(e => ({
+          ...e,
+          id: `${e.id}-clone-${i}-${newCount}`,
+          target: newId,
+        }));
+        useCanvasStore.setState({ edges: [...useCanvasStore.getState().edges, ...newEdges] });
+      }
+
+      nodeIds.push(newId);
+    }
+
+    // Generate all in parallel
+    await Promise.all(nodeIds.map(nid => generateSingle(nid)));
+
+    setGenerating(false);
+  }, [prompt, generating, selectedModel, selectedAR, id, quantity, generateSingle]);
+
+  // When image is generated, show as a clean image container
+  if (data.imageUrl) {
+    return (
+      <div className="space-node relative">
+        {selected && <NodeToolbar nodeId={id} nodeType="image-generator" />}
+
+        {/* Label */}
+        <div className="flex items-center gap-1.5 px-1 py-1.5 text-sm text-[#999]">
+          <Image className="w-4 h-4" />
+          <span className="truncate max-w-[400px]">{data.label}</span>
+        </div>
+
+        {/* Image card — true size */}
+        <div className="relative w-[320px] rounded-2xl overflow-hidden border border-[#2a2a2a]">
+          <img src={data.imageUrl} alt="" className="w-full h-auto object-contain" draggable={false} />
+          <button
+            onClick={() => updateNodeData(id, { imageUrl: undefined, status: 'idle' })}
+            className="absolute bottom-3 left-3 flex items-center gap-1.5 px-3 py-1.5 bg-black/60 backdrop-blur-sm rounded-lg text-xs text-white hover:bg-black/80 transition-colors"
+          >
+            <Play className="w-3.5 h-3.5" />
+            Regenerate
+          </button>
+        </div>
+
+        <NodeConnectors inputs={NODE_INPUTS['image-generator']} outputs={NODE_OUTPUTS['image-generator']} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-node w-[520px] rounded-2xl bg-[hsl(var(--card))] border border-[hsl(var(--border)/0.3)] shadow-[0_8px_40px_rgba(0,0,0,0.5)] relative">
+      {selected && <NodeToolbar nodeId={id} nodeType="image-generator" />}
+
+      {/* Header */}
+      <div className="flex items-center gap-2 px-4 py-2.5 text-sm text-muted-foreground">
+        <Image className="w-4 h-4" />
+        {data.label}
+      </div>
+
+      {/* Main content area */}
+      <div className="relative px-3 pb-3">
+        <div className="relative rounded-xl overflow-hidden bg-[hsl(var(--background))]" style={{ minHeight: 340 }}>
+          <textarea
+            value={prompt}
+            onChange={(e) => {
+              setPrompt(e.target.value);
+              updateNodeData(id, { prompt: e.target.value });
+            }}
+            placeholder="Describe the image you want to generate..."
+            className="w-full h-[340px] bg-transparent p-4 pt-6 text-sm text-foreground placeholder:text-muted-foreground/40 resize-none border-0 focus:outline-none"
+          />
+        </div>
+
+        {/* Bottom toolbar */}
+        <div className="flex items-center gap-2 mt-3 px-1">
+          {/* Quantity selector */}
+          <div className="flex items-center gap-0.5 bg-[hsl(var(--muted))] rounded-full px-2 py-1.5">
+            <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-5 h-5 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+              <Minus className="w-3 h-3" />
+            </button>
+            <span className="text-xs font-medium text-foreground min-w-[24px] text-center">x{quantity}</span>
+            <button onClick={() => setQuantity(Math.min(4, quantity + 1))} className="w-5 h-5 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+              <Plus className="w-3 h-3" />
+            </button>
+          </div>
+
+          {/* Model selector */}
+          <div ref={modelRef} className="relative">
+            <button
+              onClick={() => { setModelOpen(!modelOpen); setArOpen(false); }}
+              className="flex items-center gap-1.5 bg-[hsl(var(--muted))] rounded-full px-3 py-1.5 text-xs text-foreground hover:bg-[hsl(var(--muted)/0.8)] transition-colors"
+            >
+              {modelName.length > 14 ? modelName.slice(0, 14) + '…' : modelName}
+              <ChevronDown className="w-3 h-3 text-muted-foreground" />
+            </button>
+            {modelOpen && (
+              <div className="absolute bottom-full mb-2 left-0 w-[240px] bg-[hsl(var(--card))] border border-[hsl(var(--border)/0.3)] rounded-xl shadow-2xl z-50 overflow-hidden">
+                <div className="p-2">
+                  <div className="flex items-center gap-2 bg-[hsl(var(--muted))] rounded-lg px-2 py-1.5">
+                    <Search className="w-3 h-3 text-muted-foreground" />
+                    <input value={modelSearch} onChange={(e) => setModelSearch(e.target.value)} placeholder="Search" className="bg-transparent text-xs text-foreground placeholder:text-muted-foreground/50 border-0 focus:outline-none w-full" autoFocus />
+                  </div>
+                </div>
+                <div className="max-h-[260px] overflow-y-auto px-1 pb-1">
+                  {filteredModels.map(m => (
+                    <button key={m.id} onClick={() => { updateNodeData(id, { model: m.id }); setModelOpen(false); setModelSearch(''); }} className={`w-full text-left px-3 py-2 text-xs rounded-lg transition-colors ${m.id === selectedModel ? 'bg-[hsl(var(--accent))] text-accent-foreground' : 'text-foreground hover:bg-[hsl(var(--muted))]'}`}>
+                      {m.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Aspect ratio */}
+          <div ref={arRef} className="relative">
+            <button onClick={() => { setArOpen(!arOpen); setModelOpen(false); }} className="flex items-center gap-1.5 bg-[hsl(var(--muted))] rounded-full px-3 py-1.5 text-xs text-foreground hover:bg-[hsl(var(--muted)/0.8)] transition-colors">
+              <span className="w-3 h-3 border border-muted-foreground/50 rounded-sm" />
+              {selectedAR}
+              <ChevronDown className="w-3 h-3 text-muted-foreground" />
+            </button>
+            {arOpen && (
+              <div className="absolute bottom-full mb-2 left-0 w-[120px] bg-[hsl(var(--card))] border border-[hsl(var(--border)/0.3)] rounded-xl shadow-2xl z-50 overflow-hidden p-1">
+                {ASPECT_RATIOS.map(ar => (
+                  <button key={ar} onClick={() => { updateNodeData(id, { aspectRatio: ar }); setArOpen(false); }} className={`w-full text-left px-3 py-1.5 text-xs rounded-lg transition-colors ${ar === selectedAR ? 'bg-[hsl(var(--accent))] text-accent-foreground' : 'text-foreground hover:bg-[hsl(var(--muted))]'}`}>
+                    {ar}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <button className="w-8 h-8 rounded-full bg-[hsl(var(--muted))] flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+            <Settings className="w-4 h-4" />
+          </button>
+
+          <div className="flex-1" />
+
+          <button onClick={handleGenerate} disabled={generating} className="w-9 h-9 rounded-full bg-[hsl(var(--muted))] flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40">
+            <Play className="w-4 h-4" />
+          </button>
+        </div>
+
+        {generating && (
+          <div className="absolute inset-3 rounded-xl bg-black/60 flex items-center justify-center backdrop-blur-sm">
+            <div className="flex items-center gap-2 text-sm text-foreground">
+              <div className="w-4 h-4 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" />
+              Generating…
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Smart connectors */}
+      <NodeConnectors inputs={NODE_INPUTS['image-generator']} outputs={NODE_OUTPUTS['image-generator']} />
+    </div>
+  );
+}

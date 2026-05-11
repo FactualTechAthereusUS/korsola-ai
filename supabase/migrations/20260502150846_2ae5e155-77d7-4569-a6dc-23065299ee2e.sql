@@ -1,0 +1,1 @@
+ALTER TABLE public.ms_generations ADD COLUMN IF NOT EXISTS fallback_attempted boolean NOT NULL DEFAULT false;
