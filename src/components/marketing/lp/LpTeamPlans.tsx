@@ -1,8 +1,8 @@
 import { MoreVertical, Sparkles } from "lucide-react";
-import avatar1 from "@/assets/team-avatar-1.png";
-import avatar2 from "@/assets/team-avatar-2.png";
-import avatar3 from "@/assets/team-avatar-3.png";
-import avatar4 from "@/assets/team-avatar-4.png";
+import avatar1 from "@/assets/team-avatar-1.webp";
+import avatar2 from "@/assets/team-avatar-2.webp";
+import avatar3 from "@/assets/team-avatar-3.webp";
+import avatar4 from "@/assets/team-avatar-4.webp";
 
 const tools = [
   { name: "Nano Banana Pro", type: "Image generation", on: true, color: "bg-[#8b7bff]/20 text-[#cfc4ff]" },

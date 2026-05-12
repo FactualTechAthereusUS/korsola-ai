@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { GradientCTAButton } from "./GradientCTAButton";
-import logoLight from "@/assets/logo-light.png";
-import logoDark from "@/assets/logo-dark.jpg";
+import logoLight from "@/assets/logo-light.webp";
+import logoDark from "@/assets/logo-dark.webp";
 
 const NAV = [
   { to: "/features", label: "Features" },

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
-import logoDefault from '@/assets/korsola-logo-default.png';
-import logoHover from '@/assets/korsola-logo-hover.jpg';
+import logoDefault from '@/assets/korsola-logo-default.webp';
+import logoHover from '@/assets/korsola-logo-hover.webp';
 
 export function Logo({ collapsed = false }: { collapsed?: boolean }) {
   return (

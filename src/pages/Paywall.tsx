@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { Check, X, ChevronDown, Sparkles, Shield, ArrowRight, Info, Clock } from "lucide-react";
 import { LpGradientCTA } from "@/components/marketing/lp/LpGradientCTA";
-import logoLight from "@/assets/logo-light.png";
+import logoLight from "@/assets/logo-light.webp";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useNavigate } from "react-router-dom";

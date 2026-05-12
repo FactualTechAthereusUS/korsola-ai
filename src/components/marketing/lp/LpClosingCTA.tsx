@@ -1,5 +1,5 @@
 import { Sparkles } from "lucide-react";
-import closingBg from "@/assets/closing-cta-bg.png";
+import closingBg from "@/assets/closing-cta-bg.webp";
 import { SplitWords } from "@/components/marketing/SplitWords";
 
 export function LpClosingCTA() {
@@ -10,6 +10,8 @@ export function LpClosingCTA() {
         alt=""
         className="absolute inset-0 w-full h-full object-cover"
         aria-hidden
+        loading="lazy"
+        decoding="async"
       />
       <div className="relative h-full max-w-7xl mx-auto px-4 sm:px-6 flex items-center py-12 md:py-0">
         <div className="max-w-3xl text-left">

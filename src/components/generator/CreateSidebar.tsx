@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, PanelLeft, MoreHorizontal, Trash2, Sparkles, Pencil } from 'lucide-react';
 import { Logo } from '@/components/marketingstudio/Logo';
-import projectPlaceholder from '@/assets/project-placeholder.jpg';
+import projectPlaceholder from '@/assets/project-placeholder.webp';
 import { useCreateProjectsStore } from '@/store/createProjectsStore';
 import {
   DropdownMenu,

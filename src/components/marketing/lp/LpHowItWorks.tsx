@@ -51,7 +51,7 @@ export function LpHowItWorks() {
                     muted
                     loop
                     playsInline
-                    preload="auto"
+                    preload="none"
                     className="w-full h-full object-cover"
                   />
                 ) : c.image ? (

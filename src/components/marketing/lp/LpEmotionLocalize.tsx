@@ -3,7 +3,7 @@ import { ReelCard } from "./ReelCard";
 import { REEL_GRADIENTS } from "./reels";
 import { LpMarketingStudioCard } from "./LpMarketingStudioCard";
 import { GradientCTAButton } from "../GradientCTAButton";
-import agentCluster from "@/assets/lp-agent-cluster.png";
+import agentCluster from "@/assets/lp-agent-cluster.webp";
 
 export function LpEmotionLocalize() {
   return (
@@ -24,7 +24,7 @@ export function LpEmotionLocalize() {
                     muted
                     loop
                     playsInline
-                    preload="auto"
+                    preload="none"
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -40,7 +40,7 @@ export function LpEmotionLocalize() {
                     muted
                     loop
                     playsInline
-                    preload="auto"
+                    preload="none"
                     className="w-full h-full object-cover"
                   />
                 </div>

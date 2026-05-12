@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import logoLight from "@/assets/logo-light.png";
+import logoLight from "@/assets/logo-light.webp";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Mail } from "lucide-react";
 import { toast } from "sonner";

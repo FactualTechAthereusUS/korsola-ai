@@ -122,7 +122,7 @@ export function LpMarketingStudioCard() {
                     muted
                     loop={!isCenter}
                     playsInline
-                    preload="auto"
+                    preload="none"
                     onEnded={isCenter ? handleEnded : undefined}
                     className="w-full h-full object-cover"
                   />

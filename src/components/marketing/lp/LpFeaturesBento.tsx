@@ -1,7 +1,7 @@
 import { Sparkles } from "lucide-react";
 import { ReelCard } from "./ReelCard";
 import { REEL_GRADIENTS } from "./reels";
-import workflowBubbles from "@/assets/workflow-bubbles.png";
+import workflowBubbles from "@/assets/workflow-bubbles.webp";
 
 export function LpFeaturesBento() {
   return (

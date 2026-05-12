@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import heroBg from "@/assets/lp-hero-bg.png";
+import heroBg from "@/assets/lp-hero-bg.webp";
 import { LpGradientCTA } from "./LpGradientCTA";
 import { SplitWords } from "@/components/marketing/SplitWords";
 
@@ -33,6 +33,8 @@ export function LpHero() {
         alt=""
         className="absolute inset-0 w-full h-full object-cover"
         aria-hidden
+        fetchPriority="high"
+        decoding="sync"
       />
       <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/50" />
 

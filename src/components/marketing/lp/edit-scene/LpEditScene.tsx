@@ -645,7 +645,7 @@ export function LpEditScene() {
                   src={VIDEO_3_SRC}
                   muted
                   playsInline
-                  preload="auto"
+                  preload="none"
                   className="w-full h-full object-cover"
                   onEnded={latchV3Done}
                 />
@@ -756,7 +756,7 @@ export function LpEditScene() {
               src={VIDEO_1_SRC}
               muted
               playsInline
-              preload="auto"
+              preload="none"
               className="w-full h-full object-cover"
             />
 

@@ -99,7 +99,7 @@ function Card({ m }: { m: Model }) {
           muted
           loop
           playsInline
-          preload="auto"
+          preload="none"
           className="absolute inset-0 w-full h-full object-cover"
         />
       ) : (

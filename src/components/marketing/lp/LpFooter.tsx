@@ -1,4 +1,4 @@
-import logoLight from "@/assets/logo-light.png";
+import logoLight from "@/assets/logo-light.webp";
 
 const COLS = [
   {

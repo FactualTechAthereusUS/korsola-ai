@@ -67,7 +67,7 @@ export function LpActorsBlock() {
                         muted
                         loop
                         playsInline
-                        preload="auto"
+                        preload="none"
                         className="w-full h-full object-cover"
                       />
                       {!isMain && (
@@ -107,7 +107,7 @@ export function LpActorsBlock() {
                     muted
                     loop
                     playsInline
-                    preload="auto"
+                    preload="none"
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -125,7 +125,7 @@ export function LpActorsBlock() {
                     muted
                     loop
                     playsInline
-                    preload="auto"
+                    preload="none"
                     className="w-full h-full object-cover"
                   />
                 </div>
