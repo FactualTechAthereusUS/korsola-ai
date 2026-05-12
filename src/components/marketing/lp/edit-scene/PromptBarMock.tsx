@@ -47,36 +47,25 @@ export const PromptBarMock = forwardRef<HTMLDivElement, Props>(function PromptBa
             <Plus className="w-3.5 h-3.5 md:w-4 md:h-4" strokeWidth={1.5} />
           </button>
 
-          {/* Prompt area */}
-          <div className="flex-1 min-w-0 flex flex-col gap-1.5 py-1 pr-1">
-            {/* Attachment slots — responsive size */}
-            <div className="flex items-center gap-2">
-              {/* Video slot — video1 docks here */}
-              <div
-                ref={slots.videoSlot}
-                className="relative w-14 h-14 md:w-[88px] md:h-[88px] rounded-xl bg-white/[0.04] border border-white/10 overflow-hidden shrink-0"
-              />
-              {/* Product / image2 slot */}
-              <motion.div
-                ref={slots.productSlot}
-                style={{ opacity: productOpacity }}
-                className="relative w-14 h-14 md:w-[88px] md:h-[88px] rounded-xl bg-white/[0.04] border border-white/10 overflow-hidden shrink-0"
-              >
-                <img src={PRODUCT_IMG_SRC} alt="" className="absolute inset-0 w-full h-full object-cover" />
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-black/85 to-transparent" />
-                <span className="absolute bottom-1 left-1 right-1 text-[10px] font-medium text-white/95 truncate">
-                  @image_2
-                </span>
-              </motion.div>
-            </div>
-
-            {/* Textarea */}
+          {/* Prompt area — slots only, no textarea here */}
+          <div className="flex-1 min-w-0 flex items-center gap-2 py-1 pr-1">
+            {/* Video slot — video1 docks here */}
             <div
-              ref={slots.textarea}
-              className="min-h-[52px] md:min-h-[72px] max-h-[120px] w-full bg-transparent text-[13px] md:text-sm leading-[1.6] text-foreground placeholder:text-muted-foreground/70 px-1 py-1 select-none"
+              ref={slots.videoSlot}
+              className="relative w-14 h-14 md:w-[88px] md:h-[88px] rounded-xl bg-white/[0.04] border border-white/10 overflow-hidden shrink-0"
+            />
+            {/* Product / image2 slot */}
+            <motion.div
+              ref={slots.productSlot}
+              style={{ opacity: productOpacity }}
+              className="relative w-14 h-14 md:w-[88px] md:h-[88px] rounded-xl bg-white/[0.04] border border-white/10 overflow-hidden shrink-0"
             >
-              <Typewriter text={promptText} progress={typingProgress} />
-            </div>
+              <img src={PRODUCT_IMG_SRC} alt="" className="absolute inset-0 w-full h-full object-cover" />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-black/85 to-transparent" />
+              <span className="absolute bottom-1 left-1 right-1 text-[10px] font-medium text-white/95 truncate">
+                @image_2
+              </span>
+            </motion.div>
           </div>
 
           {/* Right column: Avatar (desktop only) + Generate (always shown) */}
@@ -103,6 +92,14 @@ export const PromptBarMock = forwardRef<HTMLDivElement, Props>(function PromptBa
               </LpGradientCTA>
             </motion.div>
           </div>
+        </div>
+
+        {/* Textarea — full width row so text uses all available space */}
+        <div
+          ref={slots.textarea}
+          className="min-h-[40px] md:min-h-[52px] max-h-[120px] w-full bg-transparent text-[13px] md:text-sm leading-[1.6] text-foreground px-1 py-1 select-none"
+        >
+          <Typewriter text={promptText} progress={typingProgress} />
         </div>
 
         {/* Chip row — wraps gracefully on mobile */}
