@@ -36,98 +36,68 @@ export const PromptBarMock = forwardRef<HTMLDivElement, Props>(function PromptBa
 ) {
   return (
     <div ref={ref} className="relative w-full max-w-[820px] mx-auto">
-      <div ref={slots.bar} className="relative rounded-[16px] md:rounded-[22px] ms-glass p-2 md:p-2.5 flex flex-col gap-1.5 md:gap-2 min-w-0">
-
-        {/* ── Mobile layout: slots row + text row + generate all inline ── */}
-        <div className="flex items-center gap-2 md:hidden">
-          {/* Attachment slots — compact on mobile */}
-          <div
-            ref={slots.videoSlot}
-            className="relative w-10 h-10 rounded-lg bg-white/[0.04] border border-white/10 overflow-hidden shrink-0"
-          />
-          <motion.div
-            ref={slots.productSlot}
-            style={{ opacity: productOpacity }}
-            className="relative w-10 h-10 rounded-lg bg-white/[0.04] border border-white/10 overflow-hidden shrink-0"
-          >
-            <img src={PRODUCT_IMG_SRC} alt="" className="absolute inset-0 w-full h-full object-cover" />
-            <span className="absolute bottom-0.5 left-0.5 right-0.5 text-[8px] font-medium text-white/95 truncate">@img2</span>
-          </motion.div>
-
-          {/* Prompt text — 2 lines max, flex-1 */}
-          <div
-            ref={slots.textarea}
-            className="flex-1 min-w-0 text-[12px] leading-[1.5] text-foreground select-none overflow-hidden"
-            style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" } as React.CSSProperties}
-          >
-            <Typewriter text={promptText} progress={typingProgress} />
-          </div>
-
-          {/* Generate — right side */}
-          <motion.div
-            ref={slots.generate}
-            animate={{ scale: generatePressed ? 0.94 : 1 }}
-            transition={{ type: "spring", stiffness: 400, damping: 22 }}
-            className="shrink-0"
-          >
-            <LpGradientCTA
-              showSparkles
-              className="w-[88px] h-10 rounded-xl text-[9px] font-extrabold tracking-wide"
-            >
-              {generating ? "GEN…" : "GENERATE"}
-            </LpGradientCTA>
-          </motion.div>
-        </div>
-
-        {/* ── Desktop layout: original full layout ── */}
-        <div className="hidden md:flex items-stretch gap-2">
+      <div ref={slots.bar} className="relative rounded-[18px] md:rounded-[22px] ms-glass p-2 md:p-2.5 flex flex-col gap-2 min-w-0">
+        {/* Top row */}
+        <div className="flex items-stretch gap-2">
           <button
             type="button"
-            className="grid place-items-center w-9 h-9 self-start mt-1 rounded-lg ms-chip-glass text-foreground shrink-0"
+            className="grid place-items-center w-8 h-8 md:w-9 md:h-9 self-start mt-1 rounded-lg ms-chip-glass text-foreground shrink-0"
             tabIndex={-1}
           >
-            <Plus className="w-4 h-4" strokeWidth={1.5} />
+            <Plus className="w-3.5 h-3.5 md:w-4 md:h-4" strokeWidth={1.5} />
           </button>
 
+          {/* Prompt area */}
           <div className="flex-1 min-w-0 flex flex-col gap-1.5 py-1 pr-1">
+            {/* Attachment slots — responsive size */}
             <div className="flex items-center gap-2">
+              {/* Video slot — video1 docks here */}
               <div
                 ref={slots.videoSlot}
-                className="relative w-[88px] h-[88px] rounded-xl bg-white/[0.04] border border-white/10 overflow-hidden shrink-0"
+                className="relative w-14 h-14 md:w-[88px] md:h-[88px] rounded-xl bg-white/[0.04] border border-white/10 overflow-hidden shrink-0"
               />
+              {/* Product / image2 slot */}
               <motion.div
                 ref={slots.productSlot}
                 style={{ opacity: productOpacity }}
-                className="relative w-[88px] h-[88px] rounded-xl bg-white/[0.04] border border-white/10 overflow-hidden shrink-0"
+                className="relative w-14 h-14 md:w-[88px] md:h-[88px] rounded-xl bg-white/[0.04] border border-white/10 overflow-hidden shrink-0"
               >
                 <img src={PRODUCT_IMG_SRC} alt="" className="absolute inset-0 w-full h-full object-cover" />
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-black/85 to-transparent" />
-                <span className="absolute bottom-1 left-1 right-1 text-[10px] font-medium text-white/95 truncate">@image_2</span>
+                <span className="absolute bottom-1 left-1 right-1 text-[10px] font-medium text-white/95 truncate">
+                  @image_2
+                </span>
               </motion.div>
             </div>
+
+            {/* Textarea */}
             <div
               ref={slots.textarea}
-              className="min-h-[72px] max-h-[120px] w-full bg-transparent text-sm leading-[1.6] text-foreground px-1 py-1 select-none"
+              className="min-h-[52px] md:min-h-[72px] max-h-[120px] w-full bg-transparent text-[13px] md:text-sm leading-[1.6] text-foreground placeholder:text-muted-foreground/70 px-1 py-1 select-none"
             >
               <Typewriter text={promptText} progress={typingProgress} />
             </div>
           </div>
 
-          <div className="flex items-stretch gap-2 self-start">
+          {/* Right column: Avatar (desktop only) + Generate (always shown) */}
+          <div className="flex items-stretch gap-1.5 md:gap-2 self-start">
+            {/* Avatar — desktop only */}
             <div className="hidden md:flex ms-glass-2 flex-col items-center justify-center w-[88px] h-[88px] rounded-2xl text-[10px] font-semibold text-foreground/90 overflow-hidden relative tracking-wider">
               <div className="grid place-items-center w-7 h-7 rounded-full bg-white/10 mb-1.5">
                 <Plus className="w-4 h-4 text-foreground/90" strokeWidth={1.5} />
               </div>
               <span>AVATAR</span>
             </div>
+            {/* Generate — always visible, responsive size */}
             <motion.div
               ref={slots.generate}
               animate={{ scale: generatePressed ? 0.94 : 1 }}
               transition={{ type: "spring", stiffness: 400, damping: 22 }}
+              className="relative"
             >
               <LpGradientCTA
                 showSparkles
-                className="w-[170px] h-[88px] rounded-2xl text-[12px] font-extrabold tracking-wider"
+                className="w-[110px] h-14 md:w-[170px] md:h-[88px] rounded-xl md:rounded-2xl text-[9px] md:text-[12px] font-extrabold tracking-wide md:tracking-wider"
               >
                 {generating ? "GENERATING…" : "GENERATE"}
               </LpGradientCTA>
@@ -135,7 +105,7 @@ export const PromptBarMock = forwardRef<HTMLDivElement, Props>(function PromptBa
           </div>
         </div>
 
-        {/* Chip row */}
+        {/* Chip row — wraps gracefully on mobile */}
         <div className="flex items-center gap-1.5 md:gap-2 flex-wrap pl-1">
           <Chip>UGC</Chip>
           <Chip><Smartphone className="w-3 h-3 md:w-3.5 md:h-3.5" /> 9:16</Chip>
