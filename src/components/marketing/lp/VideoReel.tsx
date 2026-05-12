@@ -32,7 +32,7 @@ export function VideoReel({ src, caption, className = "", poster }: Props) {
           }
         }
       },
-      { rootMargin: "400px" },
+      { rootMargin: "200px" },
     );
     const playIO = new IntersectionObserver(
       (entries) => {
@@ -68,7 +68,7 @@ export function VideoReel({ src, caption, className = "", poster }: Props) {
           muted
           loop
           playsInline
-          preload="metadata"
+          preload="none"
           className="absolute inset-0 w-full h-full object-cover"
         />
       )}
