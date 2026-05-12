@@ -47,10 +47,12 @@ Deno.serve(async (req) => {
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEventFromPayload(
+    event = await stripe.webhooks.constructEventAsync(
       body,
       sig!,
-      Deno.env.get("STRIPE_WEBHOOK_SECRET")!
+      Deno.env.get("STRIPE_WEBHOOK_SECRET")!,
+      undefined,
+      stripe.cryptoProvider,
     );
   } catch (err) {
     console.error("[webhook] Signature verification failed:", err);
