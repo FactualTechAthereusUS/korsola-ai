@@ -20,7 +20,7 @@ export function Typewriter({ text, progress }: Props) {
   const showCaret = count < text.length;
 
   return (
-    <span className="text-[15px] leading-[1.6] text-foreground/95"
+    <span className="text-[12px] md:text-[15px] leading-[1.6] text-foreground/95"
       style={{ fontFamily: "Montserrat, system-ui, sans-serif" }}>
       {shown}
       {showCaret && (
