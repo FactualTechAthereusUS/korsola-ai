@@ -519,7 +519,7 @@ export function LpEditScene() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center">
           <h2 className="font-display font-extrabold tracking-tight text-3xl md:text-5xl leading-[1.05] text-ink">
             Edit any video with{" "}
-            <span className="font-serif italic font-normal">a sentence</span>.
+            <span className="font-serif italic font-normal">a Prompt</span>.
           </h2>
           <video
             src={VIDEO_3_SRC}
@@ -550,7 +550,7 @@ export function LpEditScene() {
           <div className="absolute inset-x-0 top-[2%] sm:top-[3%] md:top-[4%] lg:top-[5%] z-30 px-4 sm:px-6 text-center pointer-events-none">
             <h2 className="font-display font-extrabold tracking-tight text-2xl sm:text-3xl md:text-5xl lg:text-6xl leading-[1.02] text-ink">
               Edit any video with{" "}
-              <span className="font-serif italic font-normal">a sentence</span>.
+              <span className="font-serif italic font-normal">a Prompt</span>.
             </h2>
             <p className="mt-1.5 md:mt-2 text-[12px] sm:text-[14px] md:text-[15px] max-w-xl mx-auto text-ink/60">
               Drop a clip. Add a product. Type the change. Korsola handles the rest.
