@@ -24,8 +24,8 @@ const Paywall             = lazy(() => import("./pages/Paywall.tsx"));
 
 const queryClient = new QueryClient();
 
-// Routes where the GlobalHeader (app nav) should NOT render
-const HIDE_GLOBAL_HEADER = ["/home", "/auth", "/onboarding/paywall"];
+// Routes where the GlobalHeader (app nav) should render — only /create
+const SHOW_GLOBAL_HEADER = ["/create"];
 
 /**
  * Hard paywall gate — wraps all app routes that require an active subscription.
@@ -101,7 +101,7 @@ function RequireSubscription({ children }: { children: React.ReactNode }) {
  */
 function AppInner() {
   const { pathname } = useLocation();
-  const showHeader = !HIDE_GLOBAL_HEADER.some(p => pathname.startsWith(p));
+  const showHeader = SHOW_GLOBAL_HEADER.some(p => pathname.startsWith(p));
   return (
     <>
       <SmoothScroll />

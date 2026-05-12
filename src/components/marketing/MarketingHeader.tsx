@@ -7,7 +7,7 @@ import logoDark from "@/assets/logo-dark.webp";
 const NAV = [
   { to: "/features", label: "Features" },
   { to: "/home", label: "How It Works", hash: "how" },
-  { to: "/pricing", label: "Pricing" },
+  { to: "/onboarding/paywall", label: "Pricing" },
 ] as const;
 
 export function MarketingHeader({ overlay = false }: { overlay?: boolean } = {}) {
