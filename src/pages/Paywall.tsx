@@ -271,7 +271,7 @@ function CreditsIcon({ className = "" }: { className?: string }) {
 function getBadgeStyle(badge: string) {
   switch (badge) {
     case "LATEST": return "bg-white/8 text-white/50 border-white/15";
-    case "NEW": return "bg-[#d8ff3e]/10 text-[#d8ff3e] border-[#d8ff3e]/25";
+    case "NEW": return "bg-[#2ee24d]/10 text-[#2ee24d] border-[#2ee24d]/25";
     case "POPULAR": return "bg-[#ff3e8a]/10 text-[#ff3e8a] border-[#ff3e8a]/25";
     case "FREE": return "bg-emerald-400/10 text-emerald-400 border-emerald-400/25";
     default: return "bg-white/8 text-white/50 border-white/15";
@@ -279,11 +279,11 @@ function getBadgeStyle(badge: string) {
 }
 
 function CompareCell({ value }: { value: string | boolean }) {
-  if (value === true) return <Check className="w-5 h-5 text-[#d8ff3e] mx-auto" strokeWidth={2.5} />;
+  if (value === true) return <Check className="w-5 h-5 text-[#2ee24d] mx-auto" strokeWidth={2.5} />;
   if (value === false) return <X className="w-4 h-4 text-white/20 mx-auto" />;
   const isHighlight = value === "∞ Unlimited";
   return (
-    <span className={`text-[13px] font-semibold ${isHighlight ? "text-[#d8ff3e]" : "text-white/80"}`}>
+    <span className={`text-[13px] font-semibold ${isHighlight ? "text-[#2ee24d]" : "text-white/80"}`}>
       {value}
     </span>
   );
@@ -291,13 +291,13 @@ function CompareCell({ value }: { value: string | boolean }) {
 
 function CompareCellNew({ value, accent }: { value: string | boolean; accent?: "pink" | "purple" }) {
   if (value === true) {
-    const color = accent === "pink" ? "text-[#ff3e8a]" : accent === "purple" ? "text-[#8b7bff]" : "text-[#d8ff3e]";
+    const color = accent === "pink" ? "text-[#ff3e8a]" : accent === "purple" ? "text-[#8b7bff]" : "text-[#2ee24d]";
     return <Check className={`w-[18px] h-[18px] mx-auto ${color}`} strokeWidth={2.5} />;
   }
   if (value === false) return <span className="text-white/15 text-[18px] leading-none">—</span>;
   const isUnlimited = value === "∞ Unlimited";
   const color = isUnlimited
-    ? accent === "pink" ? "text-[#ff3e8a]" : accent === "purple" ? "text-[#8b7bff]" : "text-[#d8ff3e]"
+    ? accent === "pink" ? "text-[#ff3e8a]" : accent === "purple" ? "text-[#8b7bff]" : "text-[#2ee24d]"
     : "text-white/80";
   return (
     <span
@@ -374,7 +374,7 @@ export default function Paywall() {
           Replacing{" "}
           <span className="text-white/80 line-through">$3,210–$8,210/mo</span>
           {" "}in UGC creators + tools →{" "}
-          <span className="text-[#d8ff3e] font-bold">Korsola from $6.57/day</span>
+          <span className="text-[#2ee24d] font-bold">Korsola from $6.57/day</span>
           <span className="hidden sm:inline"> · 7-day money-back guarantee</span>
         </p>
       </div>
@@ -431,7 +431,7 @@ export default function Paywall() {
           </button>
           <button
             onClick={() => setAnnual(!annual)}
-            className={`w-11 h-6 rounded-full relative transition-colors ${annual ? "bg-[#d8ff3e]" : "bg-white/15"}`}
+            className={`w-11 h-6 rounded-full relative transition-colors ${annual ? "bg-[#2ee24d]" : "bg-white/15"}`}
           >
             <span className={`absolute top-1 w-4 h-4 rounded-full bg-black transition-all duration-200 ${annual ? "left-6" : "left-1"}`} />
           </button>
@@ -440,7 +440,7 @@ export default function Paywall() {
             className={`px-5 py-2 rounded-full text-[13px] font-semibold transition-all flex items-center gap-2 ${annual ? "bg-white text-black" : "text-white/50 hover:text-white"}`}
           >
             Annual
-            <span className="bg-[#d8ff3e] text-black text-[10px] font-bold px-2 py-0.5 rounded-full">SAVE 20%</span>
+            <span className="bg-[#2ee24d] text-black text-[10px] font-bold px-2 py-0.5 rounded-full">SAVE 20%</span>
           </button>
         </div>
 
@@ -477,7 +477,7 @@ export default function Paywall() {
                 {/* Credits box */}
                 <div className="bg-white/[0.05] rounded-2xl p-4 mb-5">
                   <div className="flex items-baseline gap-1.5 mb-1">
-                    <CreditsIcon className="w-4 h-4 text-[#d8ff3e] mt-[1px]" />
+                    <CreditsIcon className="w-4 h-4 text-[#2ee24d] mt-[1px]" />
                     <span className="text-[20px] font-bold text-white">{plan.credits.toLocaleString()}</span>
                     <span className="text-[13px] text-white/50">credits/mo</span>
                   </div>
@@ -504,7 +504,7 @@ export default function Paywall() {
                         <div className="text-right shrink-0">
                           <span className="text-[26px] font-bold leading-none" style={{ color: "rgba(255,255,255,0.25)", textDecoration: "line-through", textDecorationColor: "rgba(255,255,255,0.25)" }}>${plan.monthly}</span>
                           <p className="mt-1.5">
-                            <span className="inline-block text-[11px] font-bold px-2.5 py-1 rounded-lg" style={{ background: "rgba(216,255,62,0.12)", color: "#d8ff3e", border: "1px solid rgba(216,255,62,0.22)" }}>−20%</span>
+                            <span className="inline-block text-[11px] font-bold px-2.5 py-1 rounded-lg" style={{ background: "rgba(46,226,77,0.12)", color: "#2ee24d", border: "1px solid rgba(46,226,77,0.22)" }}>−20%</span>
                           </p>
                         </div>
                       </div>
@@ -542,8 +542,8 @@ export default function Paywall() {
                 <div className="space-y-2.5 flex-1">
                   {plan.highlight.map((f) => (
                     <div key={f} className="flex items-start gap-2.5 text-[13px] text-white/70">
-                      <Check className="w-4 h-4 text-[#d8ff3e] shrink-0 mt-0.5" strokeWidth={2.5} />
-                      <span>{f.replace(" ✦", "")}{f.includes("✦") ? <span className="text-[#d8ff3e] ml-1">✦</span> : null}</span>
+                      <Check className="w-4 h-4 text-[#2ee24d] shrink-0 mt-0.5" strokeWidth={2.5} />
+                      <span>{f.replace(" ✦", "")}{f.includes("✦") ? <span className="text-[#2ee24d] ml-1">✦</span> : null}</span>
                     </div>
                   ))}
                   {plan.missing.map((f) => (
@@ -572,12 +572,12 @@ export default function Paywall() {
                     <div key={item.label} className="flex items-center justify-between px-3.5 py-2 border-b border-white/[0.05] last:border-0">
                       <div className="flex items-center gap-2">
                         {item.available
-                          ? <Check className="w-3.5 h-3.5 text-[#d8ff3e] shrink-0" strokeWidth={2.5} />
+                          ? <Check className="w-3.5 h-3.5 text-[#2ee24d] shrink-0" strokeWidth={2.5} />
                           : <X className="w-3.5 h-3.5 text-white/20 shrink-0" strokeWidth={2} />}
                         <span className={`text-[12px] ${item.available ? "text-white/70" : "text-white/25"}`}>{item.label}</span>
                       </div>
                       {item.badge && (
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wide ${item.badge === "NO UNLIMITED" ? "bg-white/10 text-white/35" : "bg-[#d8ff3e] text-black"}`}>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wide ${item.badge === "NO UNLIMITED" ? "bg-white/10 text-white/35" : "bg-[#2ee24d] text-black"}`}>
                           {item.badge}
                         </span>
                       )}
@@ -674,7 +674,7 @@ export default function Paywall() {
                     "Spaces workflow canvas",
                   ].map((item) => (
                     <div key={item} className="flex items-center gap-2.5">
-                      <Check className="w-4 h-4 text-[#d8ff3e] shrink-0" strokeWidth={2.5} />
+                      <Check className="w-4 h-4 text-[#2ee24d] shrink-0" strokeWidth={2.5} />
                       <span className="text-[13px] text-white/70" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>{item}</span>
                     </div>
                   ))}
@@ -841,8 +841,8 @@ export default function Paywall() {
               ))}
 
               {/* Footer */}
-              <div className="px-6 py-4 rounded-b-3xl bg-[#d8ff3e]/[0.04] border-t border-[#d8ff3e]/10">
-                <p className="text-[12px] text-[#d8ff3e]/70 flex items-center gap-2">
+              <div className="px-6 py-4 rounded-b-3xl bg-[#2ee24d]/[0.04] border-t border-[#2ee24d]/10">
+                <p className="text-[12px] text-[#2ee24d]/70 flex items-center gap-2">
                   <Check className="w-3.5 h-3.5 shrink-0" strokeWidth={2.5} />
                   Your credits never expire. Unused credits carry forward every month, forever.
                 </p>
@@ -888,8 +888,8 @@ export default function Paywall() {
               </div>
               {/* Korsola */}
               <div className="p-7"
-                style={{ background: "linear-gradient(145deg, rgba(216,255,62,0.05) 0%, rgba(216,255,62,0.01) 100%)" }}>
-                <p className="text-[11px] font-bold tracking-[0.14em] text-[#d8ff3e]/70 mb-5 uppercase" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>What Korsola does</p>
+                style={{ background: "linear-gradient(145deg, rgba(46,226,77,0.05) 0%, rgba(46,226,77,0.01) 100%)" }}>
+                <p className="text-[11px] font-bold tracking-[0.14em] text-[#2ee24d]/70 mb-5 uppercase" style={{ fontFamily: "'Manrope', system-ui, sans-serif" }}>What Korsola does</p>
                 <div className="space-y-3.5">
                   {[
                     "Credits never expire — roll forward indefinitely",
@@ -900,7 +900,7 @@ export default function Paywall() {
                     "30-day advance notice for any plan changes",
                   ].map((item) => (
                     <div key={item} className="flex items-start gap-3 text-[13px] text-white/75">
-                      <Check className="w-4 h-4 text-[#d8ff3e] shrink-0 mt-0.5" strokeWidth={2.5} />
+                      <Check className="w-4 h-4 text-[#2ee24d] shrink-0 mt-0.5" strokeWidth={2.5} />
                       <span>{item}</span>
                     </div>
                   ))}
@@ -913,7 +913,7 @@ export default function Paywall() {
         {/* ── Welcome Kit ── */}
         <div className="mt-16">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#d8ff3e]/10 border border-[#d8ff3e]/20 text-[#d8ff3e] text-[12px] font-semibold mb-4">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#2ee24d]/10 border border-[#2ee24d]/20 text-[#2ee24d] text-[12px] font-semibold mb-4">
               <Sparkles className="w-3.5 h-3.5" />
               Included with every plan
             </div>
@@ -931,7 +931,7 @@ export default function Paywall() {
                 }}>
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <p className="text-[14px] font-bold text-white">{item.label}</p>
-                  <span className="bg-[#d8ff3e]/10 text-[#d8ff3e] text-[11px] font-bold px-2.5 py-1 rounded-full shrink-0">{item.value}</span>
+                  <span className="bg-[#2ee24d]/10 text-[#2ee24d] text-[11px] font-bold px-2.5 py-1 rounded-full shrink-0">{item.value}</span>
                 </div>
                 <p className="text-[12px] text-white/45 leading-relaxed">{item.desc}</p>
               </div>
@@ -968,7 +968,7 @@ export default function Paywall() {
             <div className="h-2.5 rounded-full overflow-hidden" style={{ background: "rgba(91,59,255,0.15)" }}>
               <div className="h-full rounded-full" style={{ width: "84.6%", background: "linear-gradient(90deg, #5b3bff 0%, #8b7bff 100%)", boxShadow: "0 0 12px rgba(91,59,255,0.6)" }} />
             </div>
-            <p className="text-[#d8ff3e] text-[12px] font-bold mt-2">77 spots remaining</p>
+            <p className="text-[#2ee24d] text-[12px] font-bold mt-2">77 spots remaining</p>
           </div>
           <LpGradientCTA href="/auth" className="mx-auto !w-[280px]">
             Claim Founding Pricing
