@@ -16,6 +16,7 @@ export function useSubscription() {
   const { user, loading: authLoading } = useAuth();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
     if (authLoading) return;
@@ -31,7 +32,7 @@ export function useSubscription() {
       const { data } = await supabase
         .from("subscriptions")
         .select("plan, billing, status, current_period_end, cancel_at_period_end")
-        .eq("user_id", user!.uid)          // Firebase UID stored as user_id
+        .eq("user_id", user!.uid)
         .in("status", ["active", "past_due"])
         .order("created_at", { ascending: false })
         .limit(1)
@@ -45,9 +46,10 @@ export function useSubscription() {
 
     fetchSubscription();
     return () => { cancelled = true; };
-  }, [user, authLoading]);
+  }, [user, authLoading, tick]);
 
+  const refetch = () => setTick(t => t + 1);
   const isActive = subscription?.status === "active" || subscription?.status === "past_due";
 
-  return { subscription, isActive, loading: authLoading || loading };
+  return { subscription, isActive, loading: authLoading || loading, refetch };
 }

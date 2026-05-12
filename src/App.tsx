@@ -8,7 +8,7 @@ import { GlobalHeader } from "@/components/GlobalHeader";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 
 // Lazy-load every page — only downloaded when the user actually navigates there
 const Index               = lazy(() => import("./pages/Index.tsx"));
@@ -30,29 +30,65 @@ const HIDE_GLOBAL_HEADER = ["/home", "/auth", "/onboarding/paywall"];
 /**
  * Hard paywall gate — wraps all app routes that require an active subscription.
  * Flow: unauthenticated → /auth → after login → /onboarding/paywall → Stripe → /create
+ *
+ * Special case: when Stripe redirects back with ?subscribed=true, the webhook may
+ * not have fired yet. We poll Supabase up to 8× (every 2s) before giving up.
  */
 function RequireSubscription({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth();
-  const { isActive, loading: subLoading } = useSubscription();
+  const { isActive, loading: subLoading, refetch } = useSubscription();
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Detect fresh Stripe redirect
+  const justSubscribed = new URLSearchParams(location.search).has("subscribed");
+  const pollCount = useRef(0);
+  const [polling, setPolling] = useState(justSubscribed);
+
+  // Poll Supabase until subscription appears (webhook may be a few seconds late)
+  useEffect(() => {
+    if (!justSubscribed || isActive || authLoading || subLoading) return;
+    if (!polling) return;
+
+    if (pollCount.current >= 8) {
+      // Gave up — subscription still not there, go to paywall
+      setPolling(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      pollCount.current += 1;
+      await refetch();
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [justSubscribed, isActive, authLoading, subLoading, polling, refetch]);
+
   useEffect(() => {
     if (authLoading || subLoading) return;
+    // Still polling after Stripe redirect — don't redirect yet
+    if (polling && justSubscribed && pollCount.current < 8) return;
 
     if (!user) {
-      // Not logged in → /auth, come back here after login
       navigate("/auth", { state: { from: location.pathname }, replace: true });
       return;
     }
 
     if (!isActive) {
-      // Logged in but no active subscription → paywall
       navigate("/onboarding/paywall", { replace: true });
     }
-  }, [user, isActive, authLoading, subLoading, navigate, location.pathname]);
+  }, [user, isActive, authLoading, subLoading, polling, navigate, location.pathname, justSubscribed]);
 
-  // Show nothing while checking (avoid flash)
+  // While polling after Stripe redirect show a simple activating screen
+  if (polling && justSubscribed && !isActive && pollCount.current < 8) {
+    return (
+      <div className="min-h-screen bg-[#0f0f10] flex flex-col items-center justify-center gap-4">
+        <div className="w-8 h-8 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+        <p className="text-white/60 text-sm">Activating your subscription…</p>
+      </div>
+    );
+  }
+
   if (authLoading || subLoading) return null;
   if (!user || !isActive) return null;
 
