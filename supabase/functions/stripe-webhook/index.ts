@@ -172,6 +172,15 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     console.log(`[checkout.completed] Granted ${WELCOME_BONUS} welcome bonus to ${userId}`);
   }
 
+  // Fire Meta CAPI Purchase event
+  await sendMetaPurchase({
+    email:    session.customer_details?.email ?? "",
+    value:    (session.amount_total ?? 0) / 100,
+    currency: (session.currency ?? "usd").toUpperCase(),
+    orderId:  session.id,
+    plan,
+  });
+
   console.log(`[checkout.completed] Subscription created: ${plan}/${billing} for user ${userId}`);
 }
 
@@ -252,6 +261,65 @@ async function handleSubscriptionDeleted(sub: Stripe.Subscription) {
     .eq("stripe_subscription_id", sub.id);
   console.log(`[subscription.deleted] Canceled: ${sub.id}`);
   // Credits stay — they never expire, even after cancellation
+}
+
+// ── Meta Conversions API ──────────────────────────────────────────────────────
+
+async function hashSha256(value: string): Promise<string> {
+  const data = new TextEncoder().encode(value.trim().toLowerCase());
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function sendMetaPurchase({
+  email, value, currency, orderId, plan,
+}: {
+  email: string; value: number; currency: string; orderId: string; plan: string;
+}) {
+  const pixelId   = Deno.env.get("META_PIXEL_ID");
+  const capiToken = Deno.env.get("META_CAPI_ACCESS_TOKEN");
+
+  if (!pixelId || !capiToken) {
+    console.warn("[capi] META_PIXEL_ID or META_CAPI_ACCESS_TOKEN not set — skipping");
+    return;
+  }
+
+  const hashedEmail = email ? await hashSha256(email) : undefined;
+
+  const payload = {
+    data: [{
+      event_name:    "Purchase",
+      event_time:    Math.floor(Date.now() / 1000),
+      action_source: "website",
+      event_id:      orderId, // dedup with browser pixel if both fire
+      user_data: {
+        ...(hashedEmail ? { em: [hashedEmail] } : {}),
+      },
+      custom_data: {
+        currency,
+        value,
+        content_name: plan,
+        content_type: "product",
+      },
+    }],
+    test_event_code: Deno.env.get("META_TEST_EVENT_CODE") ?? undefined, // remove in production
+  };
+
+  try {
+    const res = await fetch(
+      `https://graph.facebook.com/v19.0/${pixelId}/events?access_token=${capiToken}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+    );
+    const result = await res.json();
+    console.log("[capi] Purchase sent:", JSON.stringify(result));
+  } catch (err) {
+    console.error("[capi] Failed to send Purchase:", err);
+    // Non-fatal — don't throw, webhook already succeeded
+  }
 }
 
 // ── Credit utility ────────────────────────────────────────────────────────────

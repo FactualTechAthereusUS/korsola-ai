@@ -3,6 +3,7 @@ import logoLight from "@/assets/logo-light.webp";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Mail } from "lucide-react";
 import { toast } from "sonner";
+import { trackLead } from "@/lib/pixel";
 import { signInWithGoogle, signInWithEmail, signUpWithEmail } from "@/integrations/firebase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { LpGradientCTA } from "@/components/marketing/lp/LpGradientCTA";
@@ -98,6 +99,7 @@ export default function Auth() {
     try {
       if (mode === "signup") {
         await signUpWithEmail(email, password);
+        trackLead();
         toast.success("Welcome to Korsola");
       } else {
         await signInWithEmail(email, password);
@@ -115,7 +117,11 @@ export default function Auth() {
     if (submitting) return;
     setSubmitting(true);
     try {
-      await signInWithGoogle();
+      const googleUser = await signInWithGoogle();
+      // Fire Lead for new Google sign-ups (metadata.creationTime ≈ signInTime means new user)
+      if (googleUser.metadata.creationTime === googleUser.metadata.lastSignInTime) {
+        trackLead();
+      }
       navigate(from, { replace: true });
     } catch (err: any) {
       toast.error(err?.message ?? "Google sign-in failed");

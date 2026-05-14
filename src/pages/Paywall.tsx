@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { trackInitiateCheckout } from "@/lib/pixel";
 import { Check, X, ChevronDown, Sparkles, Shield, ArrowRight, Info, Clock } from "lucide-react";
 import { LpGradientCTA } from "@/components/marketing/lp/LpGradientCTA";
 import logoLight from "@/assets/logo-light.webp";
@@ -189,6 +190,9 @@ function PlanCTA({ plan, annual }: { plan: typeof PLANS[0]; annual: boolean }) {
 
       const priceId = annual ? plan.annualPriceId : plan.monthlyPriceId;
       const billing = annual ? "annual" : "monthly";
+
+      // Fire InitiateCheckout before redirecting to Stripe
+      trackInitiateCheckout(plan.name, annual ? plan.annual : plan.monthly);
 
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
       const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;

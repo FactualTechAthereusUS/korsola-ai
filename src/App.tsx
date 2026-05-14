@@ -9,6 +9,7 @@ import { SmoothScroll } from "@/components/SmoothScroll";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { trackPageView } from "@/lib/pixel";
 
 // Lazy-load every page — only downloaded when the user actually navigates there
 const Index               = lazy(() => import("./pages/Index.tsx"));
@@ -102,6 +103,10 @@ function RequireSubscription({ children }: { children: React.ReactNode }) {
 function AppInner() {
   const { pathname } = useLocation();
   const showHeader = SHOW_GLOBAL_HEADER.some(p => pathname.startsWith(p));
+
+  // Fire PageView on every client-side route change
+  useEffect(() => { trackPageView(); }, [pathname]);
+
   return (
     <>
       <SmoothScroll />
